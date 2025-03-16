@@ -1,0 +1,16 @@
+[package]
+name = "iced_grid"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+iced = { git = "https://github.com/iced-rs/iced.git", branch = "master", features = [
+    "lazy",
+    "advanced",
+    "canvas",
+    "tokio",
+    "debug",
+] }
+
+[dev-dependencies]
+chrono = "0.4.39"
