@@ -160,7 +160,7 @@ where
             let row_count = if item_count == 0 {
                 0
             } else {
-                (item_count + columns - 1) / columns // Ceiling division
+                item_count.div_ceil(columns) // Ceiling division
             };
 
             if row_count == 0 {

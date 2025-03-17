@@ -85,7 +85,7 @@ impl App {
 
         // Calendar cells (7 columns × 6 rows)
         let calendar_cells = (0..42).map(move |i| {
-            let day_number = i as i32 - first_day as i32 + 1;
+            let day_number = i - first_day as i32 + 1;
 
             // Determine if this position has a valid day
             let is_valid_day = day_number > 0 && day_number <= days_in_month as i32;
