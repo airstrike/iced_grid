@@ -1,3 +1,4 @@
+//! A grid layout that arranges its children in equal-sized cells.
 use iced::advanced::renderer;
 use iced::widget::container::{Style, StyleFn};
 use iced::widget::{column, container, responsive, row};
@@ -34,7 +35,7 @@ where
     /// It will arrange all of the elements in a grid layout.
     pub fn new(columns: usize, items: I) -> Self {
         Self {
-            columns: columns.max(1), // Ensure at least 1 column
+            columns: columns.max(1),
             items,
             horizontal_spacing: 0.0,
             vertical_spacing: 0.0,
@@ -212,7 +213,6 @@ where
     Renderer: 'a,
     T: Into<Element<'a, Message, Theme, Renderer>>,
 {
-    /// Arranges the elements in a grid with the specified number of columns.
     fn grid(self, columns: usize) -> Grid<'a, Message, Theme, Renderer, Self>
     where
         Self: IntoIterator<Item = T>;

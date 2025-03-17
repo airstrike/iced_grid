@@ -32,14 +32,16 @@ impl Grid {
         // Example 1: Basic grid using the grid function directly
         let basic_grid = {
             let items = (0..12).map(|i| {
-                let button = button(text!("Item {i}")).on_press(Message::ButtonPressed(i));
-
-                container(button).padding(5).align_x(Center).align_y(Center)
+                button(text!("Item {i}").width(100.0).center())
+                    .width(100.0)
+                    .height(40.0)
+                    .on_press(Message::ButtonPressed(i))
             });
 
-            let grid = grid(4, items).spacing(10.0).padding(20);
-
-            center(grid).padding(10)
+            grid(4, items)
+                .spacing(10.0)
+                .style(container::bordered_box)
+                .padding(20)
         };
 
         // Example 2: Using the extension trait with styled cells
@@ -60,9 +62,7 @@ impl Grid {
                 center(content).style(style)
             });
 
-            let grid = items.grid(3).spacing(5.0).padding(10);
-
-            center(grid).padding(10)
+            items.grid(3).spacing(5.0).padding(10)
         };
 
         // Layout all examples vertically
@@ -74,8 +74,8 @@ impl Grid {
                 .padding([20, 0]),
             ext_trait_grid,
         ]
-        .spacing(10)
-        .padding(20)
+        .padding(10.0)
+        .spacing(5)
         .align_x(Center);
 
         center(content).style(container::rounded_box).into()

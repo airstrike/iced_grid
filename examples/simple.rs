@@ -31,6 +31,7 @@ impl SimpleGrid {
             .grid(3)
             .spacing(10.0)
             .padding(20.0)
+            .style(|_| container::background(iced::color!(0x2A292A)))
             .into()
     }
 
