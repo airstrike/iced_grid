@@ -4,13 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-iced = { git = "https://github.com/iced-rs/iced.git", branch = "master", features = [
+iced = { git = "https://github.com/iced-rs/iced.git", branch = "master", default-features = false, features = [
     "lazy",
     "advanced",
-    "canvas",
-    "tokio",
-    "debug",
 ] }
 
 [dev-dependencies]
 chrono = "0.4.39"
+iced = { git = "https://github.com/iced-rs/iced.git", branch = "master", features = [
+    "canvas",
+    "tokio",
+    "debug",
+] }
