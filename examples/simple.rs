@@ -22,7 +22,7 @@ impl SimpleGrid {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        (1..16)
+        (1..15)
             .map(|i| {
                 container(text!("{i}").size(20))
                     .center(Fill)
