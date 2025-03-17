@@ -1,4 +1,4 @@
-use iced::widget::{center, container, text};
+use iced::widget::{container, text};
 use iced::{Element, Fill, Task, Theme};
 
 use iced_grid::GridExt;
@@ -22,18 +22,16 @@ impl SimpleGrid {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        center(
-            (1..16)
-                .map(|i| {
-                    container(text!("{i}").size(20))
-                        .center(Fill)
-                        .style(move |_| container::background(bg_color(i)))
-                })
-                .grid(3)
-                .spacing(10.0)
-                .padding(20),
-        )
-        .into()
+        (1..16)
+            .map(|i| {
+                container(text!("{i}").size(20))
+                    .center(Fill)
+                    .style(move |_| container::background(bg_color(i)))
+            })
+            .grid(3)
+            .spacing(10.0)
+            .padding(20.0)
+            .into()
     }
 
     fn theme(&self) -> Theme {

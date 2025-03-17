@@ -1,10 +1,12 @@
 use iced::advanced::renderer;
+use iced::widget::container::{Style, StyleFn};
 use iced::widget::{column, container, responsive, row};
 use iced::{Element, Length, Padding, Size};
 
 /// A grid layout that arranges its children in equal-sized cells.
 pub struct Grid<'a, Message, Theme, Renderer, I>
 where
+    Theme: container::Catalog,
     I: IntoIterator,
     I::Item: Into<Element<'a, Message, Theme, Renderer>>,
 {
@@ -15,13 +17,14 @@ where
     padding: Padding,
     width: Length,
     height: Length,
-    _phantom: std::marker::PhantomData<(&'a Message, &'a Theme, &'a Renderer)>,
+    class: Theme::Class<'a>,
+    _phantom: std::marker::PhantomData<(&'a Message, &'a Renderer)>,
 }
 
 impl<'a, Message, Theme, Renderer, I> Grid<'a, Message, Theme, Renderer, I>
 where
     Message: 'a,
-    Theme: 'a,
+    Theme: container::Catalog + 'a,
     Renderer: 'a,
     I: IntoIterator + 'a,
     I::Item: Into<Element<'a, Message, Theme, Renderer>>,
@@ -38,6 +41,7 @@ where
             padding: Padding::ZERO,
             width: Length::Fill,
             height: Length::Fill,
+            class: Theme::default(),
             _phantom: std::marker::PhantomData,
         }
     }
@@ -77,6 +81,19 @@ where
         self.height = height.into();
         self
     }
+
+    pub fn style(mut self, style: impl Fn(&Theme) -> Style + 'a) -> Self
+    where
+        Theme::Class<'a>: From<StyleFn<'a, Theme>>,
+    {
+        self.class = (Box::new(style) as StyleFn<'a, Theme>).into();
+        self
+    }
+
+    pub fn class(mut self, class: impl Into<Theme::Class<'a>>) -> Self {
+        self.class = class.into();
+        self
+    }
 }
 
 /// Creates a grid with the given number of columns and items.
@@ -86,7 +103,7 @@ pub fn grid<'a, Message, Theme, Renderer, I>(
 ) -> Grid<'a, Message, Theme, Renderer, I>
 where
     Message: 'a,
-    Theme: 'a,
+    Theme: container::Catalog + 'a,
     Renderer: 'a,
     I: IntoIterator + 'a,
     I::Item: Into<Element<'a, Message, Theme, Renderer>>,
@@ -112,6 +129,7 @@ where
             padding,
             width: grid_width,
             height: grid_height,
+            class,
             ..
         } = grid;
 
@@ -130,8 +148,8 @@ where
             let resolved_size = limits.resolve(grid_width, grid_height, Size::ZERO);
 
             // Calculate available content width/height after padding
-            let content_width = resolved_size.width - padding.left - padding.right;
-            let content_height = resolved_size.height - padding.top - padding.bottom;
+            let content_width = resolved_size.width;
+            let content_height = resolved_size.height;
 
             // Collect items once for counting
             let collected_items: Vec<_> = items.clone().into_iter().collect();
@@ -178,9 +196,10 @@ where
 
             column(grid_rows).spacing(vertical_spacing).into()
         }))
-        .width(grid_width)
-        .height(grid_height)
+        .center_x(grid_width)
+        .center_y(grid_height)
         .padding(padding)
+        .class(class)
         .into()
     }
 }
@@ -189,7 +208,7 @@ where
 pub trait GridExt<'a, Message, Theme, Renderer, T>: Sized
 where
     Message: 'a,
-    Theme: 'a,
+    Theme: container::Catalog + 'a,
     Renderer: 'a,
     T: Into<Element<'a, Message, Theme, Renderer>>,
 {
@@ -202,7 +221,7 @@ where
 impl<'a, Message, Theme, Renderer, I, T> GridExt<'a, Message, Theme, Renderer, T> for I
 where
     Message: 'a,
-    Theme: 'a,
+    Theme: container::Catalog + 'a,
     Renderer: 'a,
     I: IntoIterator<Item = T> + 'a,
     T: Into<Element<'a, Message, Theme, Renderer>>,
@@ -214,6 +233,7 @@ where
 
 impl<'a, Message, Theme, Renderer, I> std::fmt::Debug for Grid<'a, Message, Theme, Renderer, I>
 where
+    Theme: container::Catalog,
     I: IntoIterator,
     I::Item: Into<Element<'a, Message, Theme, Renderer>>,
 {
