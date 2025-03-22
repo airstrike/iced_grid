@@ -62,7 +62,12 @@ impl Grid {
                 center(content).style(style)
             });
 
-            scrollable(items.grid(3).aspect_ratio(0.75).spacing(5.0).padding(10))
+            items
+                .grid(3)
+                .aspect_ratio(0.75)
+                .scrollable()
+                .spacing(5.0)
+                .padding(10)
         };
 
         // Layout all examples vertically

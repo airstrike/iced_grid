@@ -10,20 +10,16 @@ use crate::civitai::{Error, Id, Image, Rgba, Size};
 
 use iced::animation;
 use iced::time::{Instant, milliseconds};
-use iced::widget::{
-    button, container, horizontal_space, image, mouse_area, opaque, pop, responsive, scrollable,
-    stack,
-};
+use iced::widget::{button, container, horizontal_space, image, mouse_area, opaque, pop, stack};
 use iced::window;
 use iced::{Animation, ContentFit, Element, Fill, Function, Subscription, Task, Theme, color};
 
 use std::collections::HashMap;
 
-// Import iced_grid with GridExt trait
 use iced_grid::GridExt;
 
 fn main() -> iced::Result {
-    iced::application("Gallery - Iced Grid", Gallery::update, Gallery::view)
+    iced::application("Gallery - iced Grid", Gallery::update, Gallery::view)
         .subscription(Gallery::subscription)
         .theme(Gallery::theme)
         .run_with(Gallery::new)
@@ -171,27 +167,20 @@ impl Gallery {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        // Use responsive widget to determine the number of columns dynamically
-        let gallery = responsive(move |size: iced::Size| {
-            let grid: Element<'_, _> = self
-                .images
-                .iter()
-                .map(|image| card(image, self.previews.get(&image.id), self.now))
-                .grid(0) // Dynamic columns
-                .minimum_width(Preview::WIDTH as f32)
-                .aspect_ratio(0.75)
-                .spacing(10)
-                .width(size.width)
-                .into();
-
-            scrollable(grid).spacing(10).into()
-        });
-
-        let content = container(gallery).padding(10);
+        let grid = self
+            .images
+            .iter()
+            .map(|image| card(image, self.previews.get(&image.id), self.now))
+            .grid(0)
+            .min_width(Preview::WIDTH)
+            .aspect_ratio(16.0 / 9.0)
+            .scrollable()
+            .padding(10)
+            .spacing(10);
 
         let viewer = self.viewer.view(self.now);
 
-        stack![content, viewer].into()
+        stack![grid, viewer].into()
     }
 }
 
@@ -228,7 +217,6 @@ fn card<'a>(
         horizontal_space().into()
     };
 
-    // Use Fill so the card expands to the cell size allocated by the grid
     let card = mouse_area(
         container(image)
             .width(Fill)
@@ -251,14 +239,6 @@ fn card<'a>(
             .on_show(|_| Message::ImagePoppedIn(metadata.id))
             .into()
     }
-}
-
-fn placeholder<'a>() -> Element<'a, Message> {
-    container(horizontal_space())
-        .width(Fill)
-        .height(Fill)
-        .style(container::dark)
-        .into()
 }
 
 enum Preview {
