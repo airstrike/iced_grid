@@ -179,21 +179,25 @@ impl Gallery {
             // Define aspect ratio constants
             const ASPECT_RATIO: f32 = 3.0 / 4.0; // width:height = 3:4
             const SPACING: f32 = 10.0;
+            const MIN_WIDTH: f32 = Preview::WIDTH as f32; // Minimum width for a column
 
-            // Calculate how many columns fit in the container
+            // Calculate how many columns can fit based on minimum width
             let available_width = size.width;
-            let columns = (available_width / (Preview::WIDTH as f32 + SPACING))
-                .max(1.0)
-                .floor() as usize;
-
-            // Calculate cell dimensions based on available width and aspect ratio
+            
+            // Calculate max columns that can fit including spacing
+            // Formula: (available_width + SPACING) / (MIN_WIDTH + SPACING)
+            // This accounts for having (columns-1) spacing gaps between columns
+            let columns = ((available_width + SPACING) / (MIN_WIDTH + SPACING)).floor() as usize;
+            let columns = columns.max(1); // At least 1 column
+            
+            // Calculate actual cell width based on available space
             let total_spacing_width = (columns - 1) as f32 * SPACING;
             let cell_width = (available_width - total_spacing_width) / columns as f32;
             let cell_height = cell_width / ASPECT_RATIO;
-
+            
             // Calculate total grid height based on items and columns
             let item_count = self.images.len().max(1);
-
+            
             let row_count = item_count.div_ceil(columns);
             let total_spacing_height = (row_count - 1) as f32 * SPACING;
             let grid_height = row_count as f32 * cell_height + total_spacing_height;
@@ -264,10 +268,11 @@ fn card<'a>(
         horizontal_space().into()
     };
 
+    // Use Fill so the card expands to the cell size allocated by the grid
     let card = mouse_area(
         container(image)
-            .width(Preview::WIDTH)
-            .height(Preview::HEIGHT)
+            .width(Fill)
+            .height(Fill)
             .style(container::dark),
     )
     .on_enter(Message::ThumbnailHovered(metadata.id, true))
@@ -290,8 +295,8 @@ fn card<'a>(
 
 fn placeholder<'a>() -> Element<'a, Message> {
     container(horizontal_space())
-        .width(Preview::WIDTH)
-        .height(Preview::HEIGHT)
+        .width(Fill)
+        .height(Fill)
         .style(container::dark)
         .into()
 }
