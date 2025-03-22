@@ -3,7 +3,7 @@ use iced::Length::Shrink;
 use iced::advanced::renderer;
 use iced::widget::container::{Style, StyleFn};
 use iced::widget::{Space, column, container, responsive, row};
-use iced::{Element, Length, Padding, Size};
+use iced::{Element, Length, Padding, Pixels, Size};
 
 /// A grid layout that arranges its children in equal-sized cells.
 pub struct Grid<'a, Message, Theme, Renderer, I>
@@ -19,6 +19,8 @@ where
     padding: Padding,
     width: Length,
     height: Length,
+    aspect_ratio: Option<f32>,
+    minimum_width: Option<f32>,
     class: Theme::Class<'a>,
     _phantom: std::marker::PhantomData<(&'a Message, &'a Renderer)>,
 }
@@ -34,15 +36,19 @@ where
     /// Creates a new [`Grid`] with the given number of columns.
     ///
     /// It will arrange all of the elements in a grid layout.
+    ///
+    /// If columns is 0, it will calculate columns based on minimum_width and available space.
     pub fn new(columns: usize, items: I) -> Self {
         Self {
-            columns: columns.max(1),
+            columns,
             items,
             horizontal_spacing: 0.0,
             vertical_spacing: 0.0,
             padding: Padding::ZERO,
             width: Length::Fill,
             height: Length::Fill,
+            aspect_ratio: None,
+            minimum_width: None,
             class: Theme::default(),
             _phantom: std::marker::PhantomData,
         }
@@ -61,8 +67,8 @@ where
     }
 
     /// Sets both horizontal and vertical spacing between grid elements.
-    pub fn spacing(self, spacing: impl Into<f32>) -> Self {
-        let spacing = spacing.into();
+    pub fn spacing(self, spacing: impl Into<Pixels>) -> Self {
+        let spacing = spacing.into().0;
         self.horizontal_spacing(spacing).vertical_spacing(spacing)
     }
 
@@ -94,6 +100,29 @@ where
 
     pub fn class(mut self, class: impl Into<Theme::Class<'a>>) -> Self {
         self.class = class.into();
+        self
+    }
+
+    /// Sets the aspect ratio for grid cells (width/height).
+    ///
+    /// For example, a 16:9 aspect ratio would be 16.0/9.0.
+    /// When set, the grid will maintain this aspect ratio for all cells.
+    ///
+    /// If combined with a fixed number of columns, the width will be used to determine height.
+    /// If combined with dynamic columns (columns=0) and minimum_width, both are used to calculate
+    /// the ideal cell dimensions.
+    pub fn aspect_ratio(mut self, ratio: impl Into<Pixels>) -> Self {
+        self.aspect_ratio = Some(ratio.into().0);
+        self
+    }
+
+    /// Sets the minimum width for grid cells.
+    ///
+    /// When used with columns=0, this determines how many columns can fit in the available space.
+    /// If aspect_ratio is also set, the minimum width is used to calculate columns, and both width
+    /// and height are calculated to maintain the aspect ratio.
+    pub fn minimum_width(mut self, width: impl Into<Pixels>) -> Self {
+        self.minimum_width = Some(width.into().0);
         self
     }
 }
@@ -131,11 +160,14 @@ where
             padding,
             width: grid_width,
             height: grid_height,
+            aspect_ratio,
+            minimum_width,
             class,
             ..
         } = grid;
 
-        if columns == 0 {
+        // Empty or invalid grid
+        if columns == 0 && minimum_width.is_none() {
             return Space::new(Shrink, Shrink).into();
         }
 
@@ -161,24 +193,50 @@ where
                 _ => items.clone().into_iter().count(), // Fall back to counting if size_hint is unreliable
             };
 
+            // Calculate actual columns based on settings
+            let actual_columns = if columns == 0 {
+                // Dynamic columns mode - calculate based on minimum_width
+                if let Some(min_width) = minimum_width {
+                    // Formula: (content_width + spacing) / (min_width + spacing)
+                    // This accounts for having (columns-1) spacing between columns
+                    let calculated_columns = ((content_width + horizontal_spacing)
+                        / (min_width + horizontal_spacing))
+                        .floor() as usize;
+                    calculated_columns.max(1) // Ensure at least 1 column
+                } else {
+                    // Fallback to 1 column if no minimum width specified
+                    1
+                }
+            } else {
+                // Fixed columns mode
+                columns
+            };
+
             let row_count = if item_count == 0 {
                 0
             } else {
-                item_count.div_ceil(columns)
+                item_count.div_ceil(actual_columns)
             };
 
             if row_count == 0 {
                 return container(column![]).into();
             }
 
-            let total_h_spacing = horizontal_spacing * (columns as f32 - 1.0);
-            let cell_width = (content_width - total_h_spacing) / columns as f32;
+            // Calculate cell dimensions based on available space and settings
+            let total_h_spacing = horizontal_spacing * (actual_columns as f32 - 1.0);
+            let cell_width = (content_width - total_h_spacing) / actual_columns as f32;
 
-            let total_v_spacing = vertical_spacing * (row_count as f32 - 1.0);
-            let cell_height = (content_height - total_v_spacing) / row_count as f32;
+            let cell_height = if let Some(ratio) = aspect_ratio {
+                // If aspect ratio is provided, calculate height based on width
+                cell_width / ratio
+            } else {
+                // Otherwise distribute height evenly
+                let total_v_spacing = vertical_spacing * (row_count as f32 - 1.0);
+                (content_height - total_v_spacing) / row_count as f32
+            };
 
             let grid_rows = (0..row_count).map(|_| {
-                let row_elements = (0..columns).map(|_| {
+                let row_elements = (0..actual_columns).map(|_| {
                     if let Some(item) = items_iter.next() {
                         container(item.into())
                             .center_x(cell_width)
@@ -243,6 +301,8 @@ where
             .field("padding", &self.padding)
             .field("width", &self.width)
             .field("height", &self.height)
+            .field("aspect_ratio", &self.aspect_ratio)
+            .field("minimum_width", &self.minimum_width)
             .finish()
     }
 }

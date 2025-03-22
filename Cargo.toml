@@ -4,9 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace]
-members = [
-    "examples/gallery"
-]
+members = ["examples/gallery"]
 
 [workspace.dependencies]
 iced = { git = "https://github.com/iced-rs/iced.git", branch = "master", default-features = false }
@@ -19,7 +17,7 @@ iced = { workspace = true, default-features = false, features = [
 
 [dev-dependencies]
 chrono = "0.4.39"
-iced = { workspace = true, features = [
+iced = { workspace = true, default-features = true, features = [
     "canvas",
     "tokio",
     "debug",

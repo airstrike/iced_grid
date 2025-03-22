@@ -1,5 +1,5 @@
 use iced::Alignment::*;
-use iced::widget::{button, center, column, container, text};
+use iced::widget::{button, center, column, container, scrollable, text};
 use iced::{Element, Length, Task, Theme};
 
 use iced_grid::{GridExt, grid};
@@ -62,7 +62,7 @@ impl Grid {
                 center(content).style(style)
             });
 
-            items.grid(3).spacing(5.0).padding(10)
+            scrollable(items.grid(3).aspect_ratio(0.75).spacing(5.0).padding(10))
         };
 
         // Layout all examples vertically

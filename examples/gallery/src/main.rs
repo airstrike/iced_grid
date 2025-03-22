@@ -15,10 +15,7 @@ use iced::widget::{
     stack,
 };
 use iced::window;
-use iced::{
-    Animation, ContentFit, Element, Fill, Function, Size as IcedSize, Subscription, Task, Theme,
-    color,
-};
+use iced::{Animation, ContentFit, Element, Fill, Function, Subscription, Task, Theme, color};
 
 use std::collections::HashMap;
 
@@ -175,56 +172,19 @@ impl Gallery {
 
     pub fn view(&self) -> Element<'_, Message> {
         // Use responsive widget to determine the number of columns dynamically
-        let gallery = responsive(move |size: IcedSize| {
-            // Define aspect ratio constants
-            const ASPECT_RATIO: f32 = 3.0 / 4.0; // width:height = 3:4
-            const SPACING: f32 = 10.0;
-            const MIN_WIDTH: f32 = Preview::WIDTH as f32; // Minimum width for a column
+        let gallery = responsive(move |size: iced::Size| {
+            let grid: Element<'_, _> = self
+                .images
+                .iter()
+                .map(|image| card(image, self.previews.get(&image.id), self.now))
+                .grid(0) // Dynamic columns
+                .minimum_width(Preview::WIDTH as f32)
+                .aspect_ratio(0.75)
+                .spacing(10)
+                .width(size.width)
+                .into();
 
-            // Calculate how many columns can fit based on minimum width
-            let available_width = size.width;
-            
-            // Calculate max columns that can fit including spacing
-            // Formula: (available_width + SPACING) / (MIN_WIDTH + SPACING)
-            // This accounts for having (columns-1) spacing gaps between columns
-            let columns = ((available_width + SPACING) / (MIN_WIDTH + SPACING)).floor() as usize;
-            let columns = columns.max(1); // At least 1 column
-            
-            // Calculate actual cell width based on available space
-            let total_spacing_width = (columns - 1) as f32 * SPACING;
-            let cell_width = (available_width - total_spacing_width) / columns as f32;
-            let cell_height = cell_width / ASPECT_RATIO;
-            
-            // Calculate total grid height based on items and columns
-            let item_count = self.images.len().max(1);
-            
-            let row_count = item_count.div_ceil(columns);
-            let total_spacing_height = (row_count - 1) as f32 * SPACING;
-            let grid_height = row_count as f32 * cell_height + total_spacing_height;
-
-            // Create grid with the calculated dimensions
-            if self.images.is_empty() {
-                scrollable(
-                    (0..=Image::LIMIT)
-                        .map(|_| placeholder())
-                        .grid(columns)
-                        .spacing(SPACING)
-                        .width(available_width)
-                        .height(grid_height),
-                )
-                .into()
-            } else {
-                scrollable(
-                    self.images
-                        .iter()
-                        .map(|image| card(image, self.previews.get(&image.id), self.now))
-                        .grid(columns)
-                        .spacing(SPACING)
-                        .width(available_width)
-                        .height(grid_height),
-                )
-                .into()
-            }
+            scrollable(grid).spacing(10).into()
         });
 
         let content = container(gallery).padding(10);
