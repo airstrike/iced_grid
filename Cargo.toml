@@ -3,15 +3,23 @@ name = "iced_grid"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]
+members = [
+    "examples/gallery"
+]
+
+[workspace.dependencies]
+iced = { git = "https://github.com/iced-rs/iced.git", branch = "master", default-features = false }
+
 [dependencies]
-iced = { git = "https://github.com/iced-rs/iced.git", branch = "master", default-features = false, features = [
+iced = { workspace = true, default-features = false, features = [
     "lazy",
     "advanced",
 ] }
 
 [dev-dependencies]
 chrono = "0.4.39"
-iced = { git = "https://github.com/iced-rs/iced.git", branch = "master", features = [
+iced = { workspace = true, features = [
     "canvas",
     "tokio",
     "debug",
