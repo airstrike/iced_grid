@@ -1,7 +1,8 @@
 //! A grid layout that arranges its children in equal-sized cells.
+use iced::Length::Shrink;
 use iced::advanced::renderer;
 use iced::widget::container::{Style, StyleFn};
-use iced::widget::{column, container, responsive, row};
+use iced::widget::{Space, column, container, responsive, row};
 use iced::{Element, Length, Padding, Size};
 
 /// A grid layout that arranges its children in equal-sized cells.
@@ -135,7 +136,7 @@ where
         } = grid;
 
         if columns == 0 {
-            return container(column![]).into();
+            return Space::new(Shrink, Shrink).into();
         }
 
         container(responsive(move |container_size: Size| {
@@ -152,44 +153,41 @@ where
             let content_width = resolved_size.width;
             let content_height = resolved_size.height;
 
-            // Collect items once for counting
-            let collected_items: Vec<_> = items.clone().into_iter().collect();
-            let item_count = collected_items.len();
+            let mut items_iter = items.clone().into_iter();
 
-            // Calculate row count (at least 1 row if there are items)
+            // For most iterators the lower bound is accurate; if not, we'll need to count
+            let item_count = match items_iter.size_hint() {
+                (lower, Some(upper)) if lower == upper => lower,
+                _ => items.clone().into_iter().count(), // Fall back to counting if size_hint is unreliable
+            };
+
             let row_count = if item_count == 0 {
                 0
             } else {
-                item_count.div_ceil(columns) // Ceiling division
+                item_count.div_ceil(columns)
             };
 
             if row_count == 0 {
                 return container(column![]).into();
             }
 
-            // Calculate cell width and height
             let total_h_spacing = horizontal_spacing * (columns as f32 - 1.0);
             let cell_width = (content_width - total_h_spacing) / columns as f32;
 
             let total_v_spacing = vertical_spacing * (row_count as f32 - 1.0);
             let cell_height = (content_height - total_v_spacing) / row_count as f32;
 
-            // Create the grid row by row
-            let mut item_iter = collected_items.into_iter();
             let grid_rows = (0..row_count).map(|_| {
                 let row_elements = (0..columns).map(|_| {
-                    // Get next item or use empty container for padding
-                    let element = if let Some(item) = item_iter.next() {
-                        item.into()
+                    if let Some(item) = items_iter.next() {
+                        container(item.into())
+                            .center_x(cell_width)
+                            .center_y(cell_height)
+                            .into()
                     } else {
-                        column![].into()
-                    };
-
-                    // Wrap the element in a container of the calculated size
-                    container(element)
-                        .center_x(cell_width)
-                        .center_y(cell_height)
-                        .into()
+                        // Empty cell for padding incomplete rows
+                        Space::new(cell_width, cell_height).into()
+                    }
                 });
 
                 row(row_elements).spacing(horizontal_spacing).into()
