@@ -176,23 +176,38 @@ impl Gallery {
     pub fn view(&self) -> Element<'_, Message> {
         // Use responsive widget to determine the number of columns dynamically
         let gallery = responsive(move |size: IcedSize| {
-            // Target cell width including spacing
-            const TARGET_CELL_WIDTH: f32 = Preview::WIDTH as f32 + 10.0;
+            // Define aspect ratio constants
+            const ASPECT_RATIO: f32 = 3.0 / 4.0; // width:height = 3:4
+            const SPACING: f32 = 10.0;
 
             // Calculate how many columns fit in the container
-            let columns = (size.width / TARGET_CELL_WIDTH).max(1.0).floor() as usize;
+            let available_width = size.width;
+            let columns = (available_width / (Preview::WIDTH as f32 + SPACING))
+                .max(1.0)
+                .floor() as usize;
 
-            // Create grids with spacing applied
+            // Calculate cell dimensions based on available width and aspect ratio
+            let total_spacing_width = (columns - 1) as f32 * SPACING;
+            let cell_width = (available_width - total_spacing_width) / columns as f32;
+            let cell_height = cell_width / ASPECT_RATIO;
+
+            // Calculate total grid height based on items and columns
+            let item_count = self.images.len().max(1);
+
+            let row_count = item_count.div_ceil(columns);
+            let total_spacing_height = (row_count - 1) as f32 * SPACING;
+            let grid_height = row_count as f32 * cell_height + total_spacing_height;
+
+            // Create grid with the calculated dimensions
             if self.images.is_empty() {
                 scrollable(
                     (0..=Image::LIMIT)
                         .map(|_| placeholder())
                         .grid(columns)
-                        .spacing(10.0)
-                        .height(size.height)
-                        .width(size.width),
+                        .spacing(SPACING)
+                        .width(available_width)
+                        .height(grid_height),
                 )
-                .spacing(10)
                 .into()
             } else {
                 scrollable(
@@ -200,11 +215,10 @@ impl Gallery {
                         .iter()
                         .map(|image| card(image, self.previews.get(&image.id), self.now))
                         .grid(columns)
-                        .spacing(10.0)
-                        .height(size.height)
-                        .width(size.width),
+                        .spacing(SPACING)
+                        .width(available_width)
+                        .height(grid_height),
                 )
-                .spacing(10)
                 .into()
             }
         });
