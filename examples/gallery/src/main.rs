@@ -2,6 +2,8 @@
 //!
 //! Showcases lazy loading of images in the background, as well as
 //! some smooth animations.
+//!
+//! This version uses iced_grid widget instead of row().wrap()
 mod civitai;
 
 use crate::civitai::{Error, Id, Image, Rgba, Size};
@@ -9,16 +11,22 @@ use crate::civitai::{Error, Id, Image, Rgba, Size};
 use iced::animation;
 use iced::time::{Instant, milliseconds};
 use iced::widget::{
-    button, center_x, container, horizontal_space, image, mouse_area, opaque, pop, row, scrollable,
+    button, container, horizontal_space, image, mouse_area, opaque, pop, responsive, scrollable,
     stack,
 };
 use iced::window;
-use iced::{Animation, ContentFit, Element, Fill, Function, Subscription, Task, Theme, color};
+use iced::{
+    Animation, ContentFit, Element, Fill, Function, Size as IcedSize, Subscription, Task, Theme,
+    color,
+};
 
 use std::collections::HashMap;
 
+// Import iced_grid with GridExt trait
+use iced_grid::GridExt;
+
 fn main() -> iced::Result {
-    iced::application("Gallery - Iced", Gallery::update, Gallery::view)
+    iced::application("Gallery - Iced Grid", Gallery::update, Gallery::view)
         .subscription(Gallery::subscription)
         .theme(Gallery::theme)
         .run_with(Gallery::new)
@@ -166,18 +174,42 @@ impl Gallery {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        let gallery = if self.images.is_empty() {
-            row((0..=Image::LIMIT).map(|_| placeholder()))
-        } else {
-            row(self
-                .images
-                .iter()
-                .map(|image| card(image, self.previews.get(&image.id), self.now)))
-        }
-        .spacing(10)
-        .wrap();
+        // Use responsive widget to determine the number of columns dynamically
+        let gallery = responsive(move |size: IcedSize| {
+            // Target cell width including spacing
+            const TARGET_CELL_WIDTH: f32 = Preview::WIDTH as f32 + 10.0;
 
-        let content = container(scrollable(center_x(gallery)).spacing(10)).padding(10);
+            // Calculate how many columns fit in the container
+            let columns = (size.width / TARGET_CELL_WIDTH).max(1.0).floor() as usize;
+
+            // Create grids with spacing applied
+            if self.images.is_empty() {
+                scrollable(
+                    (0..=Image::LIMIT)
+                        .map(|_| placeholder())
+                        .grid(columns)
+                        .spacing(10.0)
+                        .height(size.height)
+                        .width(size.width),
+                )
+                .spacing(10)
+                .into()
+            } else {
+                scrollable(
+                    self.images
+                        .iter()
+                        .map(|image| card(image, self.previews.get(&image.id), self.now))
+                        .grid(columns)
+                        .spacing(10.0)
+                        .height(size.height)
+                        .width(size.width),
+                )
+                .spacing(10)
+                .into()
+            }
+        });
+
+        let content = container(gallery).padding(10);
 
         let viewer = self.viewer.view(self.now);
 
